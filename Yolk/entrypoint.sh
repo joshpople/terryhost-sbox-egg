@@ -328,6 +328,9 @@ run_sbox() {
         DOTNET_ROOT="${WIN_DOTNET_ROOT}"
         DOTNET_ROOT_X64="${WIN_DOTNET_ROOT}"
         DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP}"
+        DOTNET_EnableWriteXorExecute=0
+        COMPlus_TieredCompilation=0
+        COMPlus_ReadyToRun=0
         WINEDEBUG=-all
         WINE_CPU_TOPOLOGY=2:2
         WINEESYNC=0

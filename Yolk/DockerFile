@@ -53,26 +53,14 @@ RUN git clone --depth 1 https://github.com/Winetricks/winetricks.git /tmp/winetr
     && make install \
     && rm -rf /tmp/winetricks
 
-ENV WINEPREFIX=/work/wineprefix \
-    WINEARCH=win64 \
-    WINEDEBUG=-all \
-    XDG_RUNTIME_DIR=/tmp
-
-# Initialise Wine prefix
-RUN mkdir -p /work/wineprefix \
-    && xvfb-run -a wineboot -u
-
-# Apply winetricks verbs (all in one xvfb session to avoid state corruption).
-# Following the proven dxura/sbox approach.
-RUN xvfb-run -a winetricks -q --force ${BAKE_WINETRICKS_VERBS}
-
-# Install the Windows .NET runtime into the Wine prefix
-RUN wget -q \
-       "https://builds.dotnet.microsoft.com/dotnet/Runtime/${BAKE_WIN_DOTNET_VERSION}/dotnet-runtime-${BAKE_WIN_DOTNET_VERSION}-win-x64.exe" \
-       -O /tmp/dotnet-installer.exe \
-    && xvfb-run -a wine /tmp/dotnet-installer.exe /install /quiet /norestart \
-    && rm /tmp/dotnet-installer.exe \
-    && rm -rf "/work/wineprefix/drive_c/ProgramData/Package Cache"
+# Consolidate Wine prefix setup into one RUN layer (dxura's proven pattern).
+# Do NOT set ENV globally; pass WINEPREFIX inline. Do NOT pre-initialize with wineboot.
+RUN mkdir -p /work && cd /work && \
+    WINEPREFIX=/work/wineprefix xvfb-run winetricks -q --force ${BAKE_WINETRICKS_VERBS} && \
+    wget -q "https://builds.dotnet.microsoft.com/dotnet/Runtime/${BAKE_WIN_DOTNET_VERSION}/dotnet-runtime-${BAKE_WIN_DOTNET_VERSION}-win-x64.exe" -O dotnet-installer.exe && \
+    WINEPREFIX=/work/wineprefix xvfb-run wine dotnet-installer.exe /install /quiet /norestart && \
+    rm dotnet-installer.exe && \
+    rm -rf "/work/wineprefix/drive_c/ProgramData/Package Cache"
 
 # Verify the .NET host was installed (warn only, don't fail build).
 RUN if ! find /work/wineprefix/drive_c -name hostfxr.dll 2>/dev/null | grep -q .; then \

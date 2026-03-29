@@ -180,9 +180,49 @@ resolve_server_exe() {
     return 1
 }
 
+verify_dotnet_runtime() {
+    local win_dotnet_dir="${WINEPREFIX}/drive_c/Program Files/dotnet"
+    local hostfxr_path
+    local clrcore_path
+    
+    echo "info: verifying Windows .NET runtime in Wine prefix..." >&2
+    
+    # Check for hostfxr.dll
+    hostfxr_path="$(find "${win_dotnet_dir}" -type f -name hostfxr.dll 2>/dev/null | head -n 1 || true)"
+    if [ -z "${hostfxr_path}" ]; then
+        echo "warn: hostfxr.dll not found in ${win_dotnet_dir}; S&Box may fail with CLR errors" >&2
+        echo "info: attempting to search entire WINEPREFIX..." >&2
+        hostfxr_path="$(find "${WINEPREFIX}" -type f -name hostfxr.dll 2>/dev/null | head -n 1 || true)"
+        if [ -n "${hostfxr_path}" ]; then
+            echo "info: found hostfxr at: ${hostfxr_path}" >&2
+        fi
+    else
+        echo "info: found hostfxr at: ${hostfxr_path}" >&2
+    fi
+    
+    # Check for coreclr.dll
+    clrcore_path="$(find "${WINEPREFIX}" -type f -name coreclr.dll 2>/dev/null | head -n 1 || true)"
+    if [ -n "${clrcore_path}" ]; then
+        echo "info: found coreclr at: ${clrcore_path}" >&2
+    else
+        echo "warn: coreclr.dll not found; this will cause CLR initialization failures" >&2
+    fi
+    
+    # List what's actually in the Wine .NET directory
+    if [ -d "${win_dotnet_dir}" ]; then
+        echo "info: contents of ${win_dotnet_dir}:" >&2
+        ls -la "${win_dotnet_dir}" 2>&1 | head -20 | sed 's/^/  /' >&2
+    else
+        echo "warn: Windows .NET directory does not exist: ${win_dotnet_dir}" >&2
+        echo "info: listing WINEPREFIX drive_c structure:" >&2
+        find "${WINEPREFIX}/drive_c" -maxdepth 3 -type d -name '*dotnet*' 2>/dev/null | sed 's/^/  /' >&2
+    fi
+}
+
 run_sbox() {
     local -a args
     local -a extra
+    local log_file
 
     if ! resolve_server_exe; then
         echo "fatal: no Windows S&Box server executable found under ${SBOX_INSTALL_DIR}. Verify STEAM_PLATFORM=windows and app/depot content." >&2
@@ -222,11 +262,42 @@ run_sbox() {
     # Strip Linux .NET env vars so Wine uses the Windows runtime inside the prefix.
     unset DOTNET_ROOT DOTNET_ROOT_X86
 
+    # Ensure logs directory exists
+    mkdir -p "${CONTAINER_HOME}/logs"
+    log_file="${CONTAINER_HOME}/logs/sbox-server.log"
+
     cd "${SBOX_INSTALL_DIR}"
+    
+    # Log startup info
+    {
+        echo "=== S&Box Server Starting at $(date -u) ==="
+        echo "SBOX_INSTALL_DIR: ${SBOX_INSTALL_DIR}"
+        echo "SBOX_SERVER_EXE: ${SBOX_SERVER_EXE}"
+        echo "WINEPREFIX: ${WINEPREFIX}"
+        echo "WINEARCH: ${WINEARCH:-win64}"
+        echo "Game: ${GAME:-none}"
+        echo "Map: ${MAP:-none}"
+        echo "Server Name: ${SERVER_NAME:-none}"
+        echo "Extra Args: ${SBOX_EXTRA_ARGS:-none}"
+        echo "=== OUTPUT START ==="
+    } >> "${log_file}"
+
     if command -v xvfb-run >/dev/null 2>&1; then
-        exec env DOTNET_ROOT="${WIN_DOTNET_ROOT}" DOTNET_ROOT_X64="${WIN_DOTNET_ROOT}" DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP}" xvfb-run -a wine "${SBOX_SERVER_EXE}" "${args[@]}"
+        exec env \
+            DOTNET_ROOT="${WIN_DOTNET_ROOT}" \
+            DOTNET_ROOT_X64="${WIN_DOTNET_ROOT}" \
+            DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP}" \
+            WINEDEBUG=-all \
+            WINE_CPU_TOPOLOGY=2:2 \
+            xvfb-run -a wine "${SBOX_SERVER_EXE}" "${args[@]}" 2>&1 | tee -a "${log_file}"
     fi
-    exec env DOTNET_ROOT="${WIN_DOTNET_ROOT}" DOTNET_ROOT_X64="${WIN_DOTNET_ROOT}" DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP}" wine "${SBOX_SERVER_EXE}" "${args[@]}"
+    exec env \
+        DOTNET_ROOT="${WIN_DOTNET_ROOT}" \
+        DOTNET_ROOT_X64="${WIN_DOTNET_ROOT}" \
+        DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP}" \
+        WINEDEBUG=-all \
+        WINE_CPU_TOPOLOGY=2:2 \
+        wine "${SBOX_SERVER_EXE}" "${args[@]}" 2>&1 | tee -a "${log_file}"
 }
 
 ensure_windows_dotnet_runtime() {
@@ -419,6 +490,9 @@ if [ "$#" -eq 0 ] || [ "${1:-}" = "start-sbox" ]; then
         exec "$@"
     fi
 
+    # Verify .NET runtime before launching
+    verify_dotnet_runtime
+    
     run_sbox
 fi
 

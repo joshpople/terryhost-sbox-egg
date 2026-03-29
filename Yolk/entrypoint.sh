@@ -9,13 +9,13 @@ BAKED_SERVER_TEMPLATE="${SBOX_BAKED_SERVER_TEMPLATE:-/opt/sbox-server-template}"
 SBOX_INSTALL_DIR="${SBOX_INSTALL_DIR:-/home/container/sbox}"
 SBOX_SERVER_EXE="${SBOX_SERVER_EXE:-${SBOX_INSTALL_DIR}/sbox-server.exe}"
 SBOX_APP_ID="${SBOX_APP_ID:-1892930}"
-SBOX_AUTO_UPDATE="${SBOX_AUTO_UPDATE:-0}"
+SBOX_AUTO_UPDATE="${SBOX_AUTO_UPDATE:-1}"
 SBOX_BRANCH="${SBOX_BRANCH:-}"
 STEAM_PLATFORM="${STEAM_PLATFORM:-windows}"
 
 GAME="${GAME:-}"
 MAP="${MAP:-}"
-SERVER_NAME="${HOSTNAME:-}"
+SERVER_NAME="${SERVER_NAME:-}"
 TOKEN="${TOKEN:-}"
 SBOX_PROJECT="${SBOX_PROJECT:-}"
 SBOX_EXTRA_ARGS="${SBOX_EXTRA_ARGS:-}"
@@ -65,10 +65,65 @@ update_sbox() {
     bash "${steamcmd_bin}" "${steam_args[@]}"
 }
 
+rotate_logs() {
+    local log_dir="${CONTAINER_HOME}/logs"
+    mkdir -p "${log_dir}"
+    # Keep only the 10 most recent logs, delete older ones
+    find "${log_dir}" -maxdepth 1 -name 'sbox-*.log' -printf '%T@ %p\n' 2>/dev/null \
+        | sort -rn | tail -n +11 | awk '{print $2}' \
+        | xargs -r rm -f
+}
+
+validate_startup() {
+    if [ -z "${GAME}" ] && [ -z "${SBOX_PROJECT}" ]; then
+        echo "error: both GAME and SBOX_PROJECT are empty; set at least one startup target" >&2
+        exit 1
+    fi
+}
+
+healthcheck() {
+    local failed=0
+
+    if ! command -v wine >/dev/null 2>&1; then
+        echo "healthcheck: wine not found in PATH" >&2
+        failed=1
+    fi
+
+    if [ ! -d "${WINEPREFIX}" ]; then
+        echo "healthcheck: missing WINEPREFIX at ${WINEPREFIX}" >&2
+        failed=1
+    fi
+
+    if [ ! -f "${SBOX_SERVER_EXE}" ]; then
+        echo "healthcheck: missing server executable at ${SBOX_SERVER_EXE}" >&2
+        failed=1
+    fi
+
+    if [ ! -w "${CONTAINER_HOME}/logs" ]; then
+        echo "healthcheck: logs directory is not writable at ${CONTAINER_HOME}/logs" >&2
+        failed=1
+    fi
+
+    if [ ! -w "${CONTAINER_HOME}/data" ]; then
+        echo "healthcheck: data directory is not writable at ${CONTAINER_HOME}/data" >&2
+        failed=1
+    fi
+
+    if [ "${failed}" -ne 0 ]; then
+        exit 1
+    fi
+
+    echo "healthcheck: ok"
+}
+
 run_sbox() {
     local -a args
     local -a extra
     local -a launch_env
+    local log_file="${CONTAINER_HOME}/logs/sbox-$(date -u '+%Y%m%d-%H%M%S').log"
+
+    rotate_logs
+    echo "info: logging to ${log_file}" >&2
 
     if [ -n "${SBOX_PROJECT}" ]; then
         args+=( "${SBOX_PROJECT}" )
@@ -102,7 +157,9 @@ run_sbox() {
     )
 
     cd "${SBOX_INSTALL_DIR}"
-    exec env "${launch_env[@]}" wine "${SBOX_SERVER_EXE}" "${args[@]}"
+    env "${launch_env[@]}" wine "${SBOX_SERVER_EXE}" "${args[@]}" 2>&1 \
+        | tee "${log_file}"
+    exit "${PIPESTATUS[0]}"
 }
 
 if [ "${1:-}" = "start-sbox" ]; then
@@ -111,7 +168,13 @@ fi
 
 seed_runtime_files
 
+if [ "${1:-}" = "healthcheck" ]; then
+    healthcheck
+    exit 0
+fi
+
 if [ "${1:-}" = "" ]; then
+    validate_startup
     if [ "${SBOX_AUTO_UPDATE}" = "1" ] || [ ! -f "${SBOX_SERVER_EXE}" ]; then
         update_sbox
     fi

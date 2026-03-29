@@ -39,9 +39,9 @@
             "field_type": "text"
         },
         {
-            "name": "Hostname",
-            "description": "Server hostname",
-            "env_variable": "HOSTNAME",
+            "name": "Server Name",
+            "description": "Server display name (shown in browser)",
+            "env_variable": "SERVER_NAME",
             "default_value": "GameForgeTest",
             "user_viewable": true,
             "user_editable": true,
@@ -92,7 +92,7 @@
             "name": "Auto Update",
             "description": "Set to 1 to run SteamCMD app_update on startup, 0 to skip",
             "env_variable": "SBOX_AUTO_UPDATE",
-            "default_value": "0",
+            "default_value": "1",
             "user_viewable": true,
             "user_editable": true,
             "rules": "required|in:0,1",

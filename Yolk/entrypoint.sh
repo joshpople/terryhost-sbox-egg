@@ -46,6 +46,7 @@ update_sbox() {
     local steamcmd_bin="${STEAMCMD_BIN:-${steamcmd_home}/steamcmd.sh}"
     local bootstrap_tar="${steamcmd_home}/steamcmd_linux.tar.gz"
     local -a steam_args
+    local -a fallback_args
 
     mkdir -p "${steamcmd_home}" "${SBOX_INSTALL_DIR}"
 
@@ -58,6 +59,8 @@ update_sbox() {
     fi
 
     steam_args=(
+        +@ShutdownOnFailedCommand 1
+        +@NoPromptForPassword 1
         +@sSteamCmdForcePlatformType "${STEAM_PLATFORM}"
         +force_install_dir "${SBOX_INSTALL_DIR}"
         +login anonymous
@@ -69,7 +72,23 @@ update_sbox() {
     fi
 
     steam_args+=( validate +quit )
-    bash "${steamcmd_bin}" "${steam_args[@]}"
+    if ! bash "${steamcmd_bin}" "${steam_args[@]}"; then
+        echo "warn: SteamCMD update failed with platform '${STEAM_PLATFORM}', retrying without platform override" >&2
+        fallback_args=(
+            +@ShutdownOnFailedCommand 1
+            +@NoPromptForPassword 1
+            +force_install_dir "${SBOX_INSTALL_DIR}"
+            +login anonymous
+            +app_update "${SBOX_APP_ID}"
+        )
+
+        if [ -n "${SBOX_BRANCH}" ]; then
+            fallback_args+=( -beta "${SBOX_BRANCH}" )
+        fi
+
+        fallback_args+=( validate +quit )
+        bash "${steamcmd_bin}" "${fallback_args[@]}"
+    fi
 }
 
 run_sbox() {

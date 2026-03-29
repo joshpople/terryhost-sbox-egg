@@ -22,6 +22,7 @@ FROM debian:trixie-slim AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BAKE_WINETRICKS_VERBS="win10 vcrun2022"
 ARG BAKE_WIN_DOTNET_VERSION=10.0.0
+ARG BAKE_SBOX_APP_ID=1892930
 
 # Enable i386 and contrib/non-free (matches dxura reference)
 RUN dpkg --add-architecture i386 \
@@ -64,18 +65,34 @@ RUN mkdir -p /work && cd /work && \
 
 # Bake S&Box server content at build-time (dxura pattern) so first run does
 # not depend on runtime Steam download behavior.
+# Some regions/runs return "Missing configuration" for forced platform calls;
+# retry and fallback to native platform without failing the whole image build.
 RUN mkdir -p /work/steamcmd /work/server \
      && wget -qO /work/steamcmd/steamcmd_linux.tar.gz \
          https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \
      && tar -xzf /work/steamcmd/steamcmd_linux.tar.gz -C /work/steamcmd \
      && chmod 0755 /work/steamcmd/steamcmd.sh \
-     && bash /work/steamcmd/steamcmd.sh \
-         +@sSteamCmdForcePlatformType windows \
-         +force_install_dir /work/server \
-         +login anonymous \
-         +app_update 1892930 validate \
-         +quit \
-     && rm /work/steamcmd/steamcmd_linux.tar.gz
+     && rm /work/steamcmd/steamcmd_linux.tar.gz \
+     && if ! bash /work/steamcmd/steamcmd.sh \
+            +@ShutdownOnFailedCommand 1 \
+            +@NoPromptForPassword 1 \
+            +@sSteamCmdForcePlatformType windows \
+            +force_install_dir /work/server \
+            +login anonymous \
+            +app_update ${BAKE_SBOX_APP_ID} validate \
+            +quit; then \
+            echo "warn: forced windows download failed; retrying without platform override" >&2; \
+            if ! bash /work/steamcmd/steamcmd.sh \
+                +@ShutdownOnFailedCommand 1 \
+                +@NoPromptForPassword 1 \
+                +force_install_dir /work/server \
+                +login anonymous \
+                +app_update ${BAKE_SBOX_APP_ID} validate \
+                +quit; then \
+                echo "warn: build-time app download failed for app ${BAKE_SBOX_APP_ID}; runtime update will be used" >&2; \
+                mkdir -p /work/server; \
+            fi; \
+        fi
 # Note: We intentionally keep /work/steamcmd (only the tarball is removed)
 # so it can be reused/copied later as a SteamCMD template directory.
 
@@ -135,7 +152,6 @@ ENV CONTAINER_HOME=/home/container \
     GAME= \
     MAP= \
     SERVER_NAME= \
-    TOKEN= \
     SBOX_PROJECT= \
     SBOX_EXTRA_ARGS= \
     STEAMCMD_BIN= \

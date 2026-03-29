@@ -145,14 +145,29 @@ RUN dpkg --add-architecture i386 \
        wine \
        wine32 \
        wine64 \
-    # Consolidate Wine prefix setup into one RUN layer (dxura's proven pattern).
-    # WINEPREFIX passed inline to each command; no ENV globals in builder stage.
-    RUN mkdir -p /work && cd /work && \
-        WINEPREFIX=/work/wineprefix xvfb-run winetricks -q --force ${BAKE_WINETRICKS_VERBS} && \
-        wget -q "https://builds.dotnet.microsoft.com/dotnet/Runtime/${BAKE_WIN_DOTNET_VERSION}/dotnet-runtime-${BAKE_WIN_DOTNET_VERSION}-win-x64.exe" -O dotnet-installer.exe && \
-        WINEPREFIX=/work/wineprefix xvfb-run wine dotnet-installer.exe /install /quiet /norestart && \
-        rm dotnet-installer.exe && \
-        rm -rf "/work/wineprefix/drive_c/ProgramData/Package Cache"
+       winbind \
+       xauth \
+       xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget -qO /usr/local/bin/winetricks \
+       https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks \
+    && chmod 0755 /usr/local/bin/winetricks
+
+RUN mkdir -p /opt/steamcmd \
+    && wget -qO /tmp/steamcmd_linux.tar.gz \
+       https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \
+    && tar -xzf /tmp/steamcmd_linux.tar.gz -C /opt/steamcmd \
+    && chmod 0755 /opt/steamcmd/steamcmd.sh \
+    && rm -f /tmp/steamcmd_linux.tar.gz \
+    && ln -sf /opt/steamcmd/steamcmd.sh /usr/local/bin/steamcmd
+
+RUN if ! getent group "${PGID}" >/dev/null 2>&1; then groupadd --gid "${PGID}" container; fi \
+    && if ! id -u "${PUID}" >/dev/null 2>&1; then \
+         useradd --uid "${PUID}" --gid "${PGID}" \
+                 --home-dir /home/container \
+                 --create-home --shell /bin/bash container; \
+       fi \
     && mkdir -p \
        /home/container/.wine \
        /home/container/data \

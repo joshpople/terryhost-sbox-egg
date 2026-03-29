@@ -197,6 +197,9 @@ run_sbox() {
         args+=( "${extra[@]}" )
     fi
 
+    # Prevent Wine-launched Windows processes from using Linux .NET paths.
+    unset DOTNET_ROOT DOTNET_ROOT_X64 DOTNET_ROOT_X86 DOTNET_MULTILEVEL_LOOKUP
+
     cd "${SBOX_INSTALL_DIR}"
     if command -v xvfb-run >/dev/null 2>&1; then
         exec xvfb-run -a wine "${SBOX_SERVER_EXE}" "${args[@]}"

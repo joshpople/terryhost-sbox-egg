@@ -110,7 +110,6 @@ ENV CONTAINER_HOME=/home/container \
     WIN_DOTNET_VERSION=10.0.0 \
     WIN_DOTNET_INSTALL_METHOD=installer \
     WIN_DOTNET_ROOT=C:\\Program\ Files\\dotnet \
-    DOTNET_MULTILEVEL_LOOKUP=0 \
     GAME= \
     MAP= \
     HOSTNAME= \

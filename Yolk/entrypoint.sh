@@ -24,6 +24,7 @@ WIN_DOTNET_VERSION="${WIN_DOTNET_VERSION:-10.0.0}"
 WIN_DOTNET_INSTALL_METHOD="${WIN_DOTNET_INSTALL_METHOD:-installer}"
 WIN_DOTNET_ROOT="${WIN_DOTNET_ROOT:-C:\\Program Files\\dotnet}"
 DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP:-0}"
+SBOX_WINEDEBUG="${SBOX_WINEDEBUG:-${WINEDEBUG:--all}}"
 GAME="${GAME:-}"
 MAP="${MAP:-}"
 SERVER_NAME="${HOSTNAME:-}"
@@ -257,6 +258,40 @@ verify_dotnet_runtime() {
     fi
 }
 
+log_managed_artifacts() {
+    local root
+    local report_limit="${SBOX_MANAGED_REPORT_LIMIT:-120}"
+    local -a roots
+
+    roots=(
+        "${SBOX_INSTALL_DIR}"
+        "${CONTAINER_HOME}/data"
+        "${WINEPREFIX}/drive_c/users/${USER:-container}/AppData/Local/Facepunch"
+        "${WINEPREFIX}/drive_c/users/${USER:-container}/AppData/Roaming/Facepunch"
+    )
+
+    echo "info: managed artifact scan (limit=${report_limit})" >&2
+    for root in "${roots[@]}"; do
+        if [ ! -d "${root}" ]; then
+            continue
+        fi
+
+        echo "info: scanning ${root}" >&2
+
+        find "${root}" -type f \( -iname '*.dll' -o -iname '*.pdb' -o -iname '*.deps.json' -o -iname '*.runtimeconfig.json' \) 2>/dev/null \
+            | head -n "${report_limit}" \
+            | while IFS= read -r file_path; do
+                local size
+                local hash
+                size="$(stat -c '%s' "${file_path}" 2>/dev/null || echo 0)"
+                hash="$(sha256sum "${file_path}" 2>/dev/null | awk '{print $1}' || echo unavailable)"
+                echo "  file=${file_path} size=${size} sha256=${hash}" >&2
+            done
+
+        find "${root}" -type f -size 0 2>/dev/null | head -n 20 | sed 's/^/  zero-byte: /' >&2 || true
+    done
+}
+
 run_sbox() {
     local -a args
     local -a extra
@@ -300,8 +335,8 @@ run_sbox() {
         args+=( "${extra[@]}" )
     fi
 
-    # Strip Linux .NET env vars so Wine uses the Windows runtime inside the prefix.
-    unset DOTNET_ROOT DOTNET_ROOT_X86
+    # Strip Linux .NET env vars so Wine chooses runtime paths like the dxura image.
+    unset DOTNET_ROOT DOTNET_ROOT_X86 DOTNET_ROOT_X64
 
     # If no log file provided, create one
     if [ -z "${log_file}" ]; then
@@ -319,6 +354,7 @@ run_sbox() {
         echo "SBOX_SERVER_EXE: ${SBOX_SERVER_EXE}"
         echo "WINEPREFIX: ${WINEPREFIX}"
         echo "WINEARCH: ${WINEARCH:-win64}"
+        echo "SBOX_WINEDEBUG: ${SBOX_WINEDEBUG}"
         echo "Container IPs: $(hostname -I 2>/dev/null || echo unknown)"
         echo "SBOX_USE_XVFB: ${SBOX_USE_XVFB}"
         echo "SBOX_DEBUG_LOGGING: ${SBOX_DEBUG_LOGGING}"
@@ -334,10 +370,7 @@ run_sbox() {
     exec > >(tee -a "${log_file}") 2>&1
 
     launch_env=(
-        DOTNET_ROOT="${WIN_DOTNET_ROOT}"
-        DOTNET_ROOT_X64="${WIN_DOTNET_ROOT}"
-        DOTNET_MULTILEVEL_LOOKUP="${DOTNET_MULTILEVEL_LOOKUP}"
-        WINEDEBUG=-all
+        WINEDEBUG="${SBOX_WINEDEBUG}"
         WINE_CPU_TOPOLOGY=2:2
         WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-icu,icuuc=d}"
     )
@@ -349,6 +382,7 @@ run_sbox() {
         ip -br address 2>/dev/null || true
         echo "info: debug snapshot: resolv.conf" >&2
         cat /etc/resolv.conf 2>/dev/null || true
+        log_managed_artifacts
     fi
 
     # Capture the real process exit code even with `set -e` enabled globally.

@@ -68,7 +68,7 @@ RUN mkdir -p /work/steamcmd /work/server \
      && tar -xzf /work/steamcmd/steamcmd_linux.tar.gz -C /work/steamcmd \
      && chmod 0755 /work/steamcmd/steamcmd.sh \
      && rm /work/steamcmd/steamcmd_linux.tar.gz \
-     && if ! bash /work/steamcmd/steamcmd.sh \
+         && if ! bash /work/steamcmd/steamcmd.sh \
             +@ShutdownOnFailedCommand 1 \
             +@NoPromptForPassword 1 \
             +@sSteamCmdForcePlatformType windows \
@@ -76,9 +76,13 @@ RUN mkdir -p /work/steamcmd /work/server \
             +login anonymous \
             +app_update ${BAKE_SBOX_APP_ID} validate \
             +quit; then \
-            echo "warn: build-time Windows depot download failed for app ${BAKE_SBOX_APP_ID}; runtime update will be required" >&2; \
-            rm -rf /work/server/*; \
+                        echo "error: build-time Windows depot download failed for app ${BAKE_SBOX_APP_ID}" >&2; \
+                        exit 1; \
           fi \
+            && if [ ! -f /work/server/sbox-server.exe ]; then \
+                        echo "error: build-time prebake is missing /work/server/sbox-server.exe" >&2; \
+                        exit 1; \
+                 fi \
       && rm -rf /work/steamcmd
 
 # Verify the .NET host was installed (warn only, don't fail build).

@@ -51,12 +51,12 @@ seed_runtime_files() {
         cp -r "${BAKED_WINEPREFIX}/." "${WINEPREFIX}/"
     fi
 
-    if [ "${seed_sbox}" = "1" ] && [ -d "${BAKED_SERVER_TEMPLATE}" ]; then
+    if [ "${seed_sbox}" = "1" ] && [ -f "${BAKED_SERVER_TEMPLATE}/sbox-server.exe" ]; then
         echo "info: seeding S&Box files from ${BAKED_SERVER_TEMPLATE} (${seed_reason})" >&2
         cp -r "${BAKED_SERVER_TEMPLATE}/." "${SBOX_INSTALL_DIR}/"
         SBOX_PREBAKED_SEEDED=1
     elif [ "${seed_sbox}" = "1" ]; then
-        echo "warn: ${SBOX_INSTALL_DIR} requires reseed (${seed_reason}) but prebaked template was not found at ${BAKED_SERVER_TEMPLATE}" >&2
+        echo "warn: ${SBOX_INSTALL_DIR} requires reseed (${seed_reason}) but prebaked Windows template is missing ${BAKED_SERVER_TEMPLATE}/sbox-server.exe" >&2
     fi
 
 }
@@ -139,7 +139,7 @@ update_sbox() {
 
     steam_args+=( validate +quit )
 
-    if ! run_steamcmd +quit >/dev/null 2>&1; then
+    if ! run_steamcmd +quit; then
         echo "warn: SteamCMD runtime probe failed; cannot run auto-update" >&2
         if [ ! -f "${SBOX_SERVER_EXE}" ]; then
             echo "error: SteamCMD probe failed and ${SBOX_SERVER_EXE} is missing" >&2

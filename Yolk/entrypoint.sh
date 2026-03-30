@@ -27,7 +27,7 @@ if [ -z "${SERVER_NAME}" ] && [ -n "${HOSTNAME:-}" ] && ! [[ "${HOSTNAME}" =~ ^[
 fi
 
 seed_runtime_files() {
-    mkdir -p "${CONTAINER_HOME}" "${WINEPREFIX}" "${SBOX_INSTALL_DIR}" "${CONTAINER_HOME}/logs" "${CONTAINER_HOME}/data" "${CONTAINER_HOME}/.steamcmd"
+    mkdir -p "${CONTAINER_HOME}" "${WINEPREFIX}" "${SBOX_INSTALL_DIR}" "${CONTAINER_HOME}/logs"
 
     if [ ! -f "${WINEPREFIX}/system.reg" ] && [ -d "${BAKED_WINEPREFIX}/drive_c" ]; then
         echo "info: seeding Wine prefix from ${BAKED_WINEPREFIX}" >&2
@@ -39,116 +39,8 @@ seed_runtime_files() {
         cp -r "${BAKED_SERVER_TEMPLATE}/." "${SBOX_INSTALL_DIR}/"
     fi
 
-    chmod +x "${CONTAINER_HOME}/.steamcmd/steamcmd.sh" 2>/dev/null || true
-    chmod +x "${CONTAINER_HOME}/.steamcmd/linux32/steamcmd" 2>/dev/null || true
 }
 
-update_sbox() {
-    local steamcmd_home="${CONTAINER_HOME}/.steamcmd"
-    local steamcmd_bin="${STEAMCMD_BIN:-${steamcmd_home}/steamcmd.sh}"
-    local bootstrap_tar="${steamcmd_home}/steamcmd_linux.tar.gz"
-    local steamcmd_linux32="${steamcmd_home}/linux32/steamcmd"
-    local compat_loader="/opt/steam-compat/lib/ld-linux.so.2"
-    local compat_lib_path="/opt/steam-compat/lib/i386-linux-gnu:/opt/steam-compat/usr/lib/i386-linux-gnu:/opt/steam-compat/lib"
-    local bundled_steamcmd="${steamcmd_home}/steamcmd.sh"
-    local steamcmd_mode="script"
-    local -a steam_args
-    local -a fallback_args
-    local -a steamcmd_cmd
-
-    mkdir -p "${steamcmd_home}" "${SBOX_INSTALL_DIR}"
-
-    # Keep runtime SteamCMD path inside Pterodactyl space by default.
-    # Users can override with STEAMCMD_BIN if they explicitly want another path.
-
-    if [ ! -r "${steamcmd_bin}" ]; then
-        if [ "${steamcmd_bin}" != "${bundled_steamcmd}" ]; then
-            echo "warn: configured STEAMCMD_BIN '${steamcmd_bin}' not found; falling back to ${bundled_steamcmd}" >&2
-            steamcmd_bin="${bundled_steamcmd}"
-        fi
-
-        wget -qO "${bootstrap_tar}" https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
-        tar -xzf "${bootstrap_tar}" -C "${steamcmd_home}"
-        rm -f "${bootstrap_tar}"
-        chmod 0755 "${bundled_steamcmd}" || true
-        chmod 0755 "${steamcmd_linux32}" 2>/dev/null || true
-    fi
-
-    if [[ "${steamcmd_bin}" = *.sh ]]; then
-        steamcmd_cmd=( bash "${steamcmd_bin}" )
-    else
-        steamcmd_cmd=( "${steamcmd_bin}" )
-        steamcmd_mode="native"
-    fi
-
-    if ! "${steamcmd_cmd[@]}" +quit >/dev/null 2>&1; then
-        if [ -x "${compat_loader}" ] && [ -x "${steamcmd_linux32}" ]; then
-            if "${compat_loader}" --library-path "${compat_lib_path}" "${steamcmd_linux32}" +quit >/dev/null 2>&1; then
-                steamcmd_mode="compat"
-            else
-                echo "warn: SteamCMD runtime probe failed for '${steamcmd_bin}'; skipping auto-update" >&2
-                return 0
-            fi
-        else
-            echo "warn: SteamCMD runtime probe failed for '${steamcmd_bin}'; skipping auto-update" >&2
-            return 0
-        fi
-    fi
-
-    steam_args=(
-        +@ShutdownOnFailedCommand 1
-        +@NoPromptForPassword 1
-        +@sSteamCmdForcePlatformType "${STEAM_PLATFORM}"
-        +force_install_dir "${SBOX_INSTALL_DIR}"
-        +login anonymous
-        +app_update "${SBOX_APP_ID}"
-    )
-
-    if [ -n "${SBOX_BRANCH}" ]; then
-        steam_args+=( -beta "${SBOX_BRANCH}" )
-    fi
-
-    steam_args+=( validate +quit )
-
-    if [ "${steamcmd_mode}" = "compat" ]; then
-        if ! "${compat_loader}" --library-path "${compat_lib_path}" "${steamcmd_linux32}" "${steam_args[@]}"; then
-            echo "warn: SteamCMD update failed with platform '${STEAM_PLATFORM}', retrying without platform override" >&2
-            fallback_args=(
-                +@ShutdownOnFailedCommand 1
-                +@NoPromptForPassword 1
-                +force_install_dir "${SBOX_INSTALL_DIR}"
-                +login anonymous
-                +app_update "${SBOX_APP_ID}"
-            )
-
-            if [ -n "${SBOX_BRANCH}" ]; then
-                fallback_args+=( -beta "${SBOX_BRANCH}" )
-            fi
-
-            fallback_args+=( validate +quit )
-            "${compat_loader}" --library-path "${compat_lib_path}" "${steamcmd_linux32}" "${fallback_args[@]}"
-        fi
-        return 0
-    fi
-
-    if ! "${steamcmd_cmd[@]}" "${steam_args[@]}"; then
-        echo "warn: SteamCMD update failed with platform '${STEAM_PLATFORM}', retrying without platform override" >&2
-        fallback_args=(
-            +@ShutdownOnFailedCommand 1
-            +@NoPromptForPassword 1
-            +force_install_dir "${SBOX_INSTALL_DIR}"
-            +login anonymous
-            +app_update "${SBOX_APP_ID}"
-        )
-
-        if [ -n "${SBOX_BRANCH}" ]; then
-            fallback_args+=( -beta "${SBOX_BRANCH}" )
-        fi
-
-        fallback_args+=( validate +quit )
-        "${steamcmd_cmd[@]}" "${fallback_args[@]}"
-    fi
-}
 
 run_sbox() {
     local -a args
@@ -197,9 +89,6 @@ fi
 seed_runtime_files
 
 if [ "${1:-}" = "" ]; then
-    if [ "${SBOX_AUTO_UPDATE}" = "1" ] || [ ! -f "${SBOX_SERVER_EXE}" ]; then
-        update_sbox
-    fi
     run_sbox
 fi
 

@@ -115,6 +115,7 @@ LABEL org.opencontainers.image.authors="Steven A. Smith" \
 ARG PUID=999
 ARG PGID=999
 
+# Runtime defaults
 ENV CONTAINER_HOME=/home/container \
     HOME=/home/container \
     WINEPREFIX=/home/container/.wine \
@@ -129,10 +130,7 @@ ENV CONTAINER_HOME=/home/container \
     SBOX_APP_ID=1892930 \
     SBOX_INSTALL_DIR=/home/container/sbox \
     SBOX_SERVER_EXE=/home/container/sbox/sbox-server.exe \
-    SBOX_AUTO_UPDATE=1 \
-    SBOX_BRANCH= \
     SBOX_LOG_KEEP=10 \
-    STEAM_PLATFORM=windows \
     # Runtime winetricks / .NET provisioning — disabled by default because the
     # Wine prefix is already fully baked into the image.
     INSTALL_WINETRICKS_DOTNET=0 \
@@ -152,37 +150,31 @@ ENV CONTAINER_HOME=/home/container \
     SERVER_NAME= \
     SBOX_PROJECT= \
     SBOX_EXTRA_ARGS= \
-    STEAMCMD_BIN= \
-     XDG_RUNTIME_DIR=/tmp
+    XDG_RUNTIME_DIR=/tmp
 
 RUN apk add --no-cache \
-         bash \
-         ca-certificates \
-         gnutls \
-         libgcc \
-         libstdc++ \
-         tar \
-         wget \
-         wine
+    bash \
+    ca-certificates \
+    gnutls \
+    libgcc \
+    libstdc++ \
+    tar \
+    wget \
+    wine
 
 RUN mkdir -p \
-         /home/container/.wine \
-         /home/container/data \
-         /home/container/download \
-         /home/container/logs \
-         /home/container/sbox \
-     && chmod 1777 /tmp
+    ${WINEPREFIX} \
+    ${CONTAINER_HOME}/data \
+    ${CONTAINER_HOME}/download \
+    ${CONTAINER_HOME}/logs \
+    ${SBOX_INSTALL_DIR} \
+    && chmod 1777 /tmp
 
 # Copy the baked Wine prefix from the builder stage into a path that is NOT
 # covered by the Pterodactyl /home/container volume bind mount.  The
 # entrypoint will copy this to /home/container/.wine on the first start.
 COPY --from=builder /work/wineprefix /opt/sbox-wine-prefix
 COPY --from=builder /work/server /opt/sbox-server-template
-
-# Compatibility runtime for SteamCMD linux32 binary on Alpine/musl.
-COPY --from=builder /lib/ld-linux.so.2 /opt/steam-compat/lib/ld-linux.so.2
-COPY --from=builder /lib/i386-linux-gnu /opt/steam-compat/lib/i386-linux-gnu
-COPY --from=builder /usr/lib/i386-linux-gnu /opt/steam-compat/usr/lib/i386-linux-gnu
 
 # Fix permissions on copied templates so non-root user can access them.
 # Pterodactyl typically runs containers as uid 999, so ensure these are readable.
@@ -197,7 +189,7 @@ RUN cp -a /opt/sbox-wine-prefix /root/.wine && \
 COPY Yolk/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 0755 /usr/local/bin/entrypoint.sh
 
-WORKDIR /home/container
+WORKDIR ${CONTAINER_HOME}
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["start-sbox"]

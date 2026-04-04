@@ -84,6 +84,37 @@ resolve_project_target() {
     printf '%s' "${project_target}"
 }
 
+ensure_project_libraries_dir() {
+    local project_target="$1"
+    local project_path=""
+    local project_dir=""
+    local libraries_dir=""
+
+    if [ -z "${project_target}" ]; then
+        return 0
+    fi
+
+    if [[ "${project_target}" = /* ]]; then
+        project_path="${project_target}"
+    else
+        project_path="${SBOX_PROJECTS_DIR}/${project_target}"
+    fi
+
+    if [[ "${project_path}" = *.sbproj ]]; then
+        project_dir="$(dirname "${project_path}")"
+    elif [[ "${project_path}" = */* ]]; then
+        project_dir="$(dirname "${project_path}")"
+    else
+        return 0
+    fi
+
+    libraries_dir="${project_dir}/Libraries"
+    if [ ! -d "${libraries_dir}" ]; then
+        mkdir -p "${libraries_dir}"
+        echo "info: created required local project folder ${libraries_dir}" >&2
+    fi
+}
+
 steamcmd_installed() {
     local steamcmd_bin=""
 
@@ -202,7 +233,11 @@ run_sbox() {
     project_target="$(resolve_project_target)"
 
     if [ -n "${project_target}" ]; then
+        ensure_project_libraries_dir "${project_target}"
         args+=( +game "${project_target}" )
+        if [ -n "${MAP}" ]; then
+            args+=( "${MAP}" )
+        fi
     elif [ -n "${GAME}" ]; then
         args+=( +game "${GAME}" )
         if [ -n "${MAP}" ]; then

@@ -33,6 +33,7 @@ fi
 seed_runtime_files() {
     local seed_sbox=0
     local seed_reason=""
+    local baked_server_exe="${BAKED_SERVER_TEMPLATE}/sbox-server.exe"
 
     if [ ! -d "${SBOX_INSTALL_DIR}" ]; then
         seed_sbox=1
@@ -43,6 +44,9 @@ seed_runtime_files() {
     elif [ ! -f "${SBOX_SERVER_EXE}" ]; then
         seed_sbox=1
         seed_reason="missing Windows server executable"
+    elif [ "${SBOX_AUTO_UPDATE}" = "1" ] && [ -f "${baked_server_exe}" ] && [ "${baked_server_exe}" -nt "${SBOX_SERVER_EXE}" ]; then
+        seed_sbox=1
+        seed_reason="newer prebaked Windows server executable"
     fi
 
     mkdir -p "${CONTAINER_HOME}" "${WINEPREFIX}" "${SBOX_INSTALL_DIR}" "${CONTAINER_HOME}/logs" "${STEAMCMD_DIR}" "${SBOX_PROJECTS_DIR}"
@@ -52,7 +56,7 @@ seed_runtime_files() {
         cp -r "${BAKED_WINEPREFIX}/." "${WINEPREFIX}/"
     fi
 
-    if [ "${seed_sbox}" = "1" ] && [ -f "${BAKED_SERVER_TEMPLATE}/sbox-server.exe" ]; then
+    if [ "${seed_sbox}" = "1" ] && [ -f "${baked_server_exe}" ]; then
         echo "info: seeding S&Box files from ${BAKED_SERVER_TEMPLATE} (${seed_reason})" >&2
         cp -r "${BAKED_SERVER_TEMPLATE}/." "${SBOX_INSTALL_DIR}/"
         SBOX_PREBAKED_SEEDED=1

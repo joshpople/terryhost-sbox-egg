@@ -1,15 +1,17 @@
 {
-    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PELICAN PANEL - PELICAN.IO",
     "meta": {
         "version": "PTDL_v2",
         "update_url": null
     },
+    "exported_at": "2026-04-09T00:00:00+00:00",
     "name": "s&box Game Server",
-    "author": "team@gameforge.gg",
+    "author": "lucky@svn.gg",
+    "uuid": "dac2aaa2-4ef2-4220-a0cf-a968e61919f7",
     "description": "s&box dedicated server using a custom runtime image with baked Wine + Windows .NET, while SteamCMD is installed by the egg installer and server files are managed at runtime.",
     "features": [],
     "docker_images": {
-        "ghcr.io\/hyberhost\/gameforge-sbox-egg:latest": "ghcr.io\/hyberhost\/gameforge-sbox-egg:latest"
+        "ghcr.io/hyberhost/gameforge-sbox-egg:latest": "ghcr.io/hyberhost/gameforge-sbox-egg:latest"
     },
     "file_denylist": [],
     "startup": "start-sbox",
@@ -21,8 +23,8 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!/bin/bash\nset -euo pipefail\n\nmkdir -p /mnt/server /mnt/server/steamcmd /mnt/server/steamapps\ncd /tmp\nrm -f steamcmd.tar.gz\ncurl -sSL -o steamcmd.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz\ntar -xzvf steamcmd.tar.gz -C /mnt/server/steamcmd --no-same-owner\ncd /mnt/server/steamcmd\nchown -R root:root /mnt || true\nexport HOME=/mnt/server\n\n./steamcmd.sh +quit\n\nmkdir -p /mnt/server/.steam/sdk32\ncp -v linux32/steamclient.so /mnt/server/.steam/sdk32/steamclient.so\nmkdir -p /mnt/server/.steam/sdk64\ncp -v linux64/steamclient.so /mnt/server/.steam/sdk64/steamclient.so\n\necho \"-----------------------------------------\"\necho \"SteamCMD installation completed...\"\necho \"-----------------------------------------\"\n",
-            "container": "ghcr.io/ptero-eggs/installers:debian",
+            "script": "#!/bin/bash\nset -euo pipefail\n\nmkdir -p /mnt/server /mnt/server/steamcmd /mnt/server/steamapps\ncd /tmp\nrm -f steamcmd.tar.gz\ncurl -sSL -o steamcmd.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz\ntar -xzvf steamcmd.tar.gz -C /mnt/server/steamcmd --no-same-owner\ncd /mnt/server/steamcmd\nchown -R root:root /mnt/server/steamcmd /mnt/server/.steam || true\nexport HOME=/mnt/server\n\n./steamcmd.sh +quit\n\nmkdir -p /mnt/server/.steam/sdk32\ncp -v linux32/steamclient.so /mnt/server/.steam/sdk32/steamclient.so\nmkdir -p /mnt/server/.steam/sdk64\ncp -v linux64/steamclient.so /mnt/server/.steam/sdk64/steamclient.so\n\necho \"-----------------------------------------\"\necho \"SteamCMD installation completed...\"\necho \"-----------------------------------------\"\n",
+            "container": "ghcr.io/pelican-eggs/installers:debian",
             "entrypoint": "bash"
         }
     },
@@ -41,7 +43,7 @@
             "name": "Server Name",
             "description": "Public server name shown in the s&box server browser and listings.",
             "env_variable": "SERVER_NAME",
-            "default_value": "Pterodactyl Sandbox Server",
+            "default_value": "Pelican Sandbox Server",
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|string|max:128",

@@ -21,7 +21,7 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!/bin/bash\nset -euoo pipefail\n\nmkdir -p /mnt/server /mnt/server/steamcmd /mnt/server/steamapps\ncd /tmp\nrm -f steamcmd.tar.gz\ncurl -sSL -o steamcmd.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz\ntar -xzvf steamcmd.tar.gz -C /mnt/server/steamcmd --no-same-owner\ncd /mnt/server/steamcmd\nchown -R root:root /mnt || true\nexport HOME=/mnt/server\n\n./steamcmd.sh +quit\n\nmkdir -p /mnt/server/.steam/sdk32\ncp -v linux32/steamclient.so /mnt/server/.steam/sdk32/steamclient.so\nmkdir -p /mnt/server/.steam/sdk64\ncp -v linux64/steamclient.so /mnt/server/.steam/sdk64/steamclient.so\n\necho \"\\n-----------------------------------\"\necho \"SteamCMD installation complete...\"\necho \"-----------------------------------\"\n",
+            "script": "#!/bin/bash\nset -euo pipefail\n\nmkdir -p /mnt/server\n\necho \"Runtime image provides SteamCMD/Wine and baked server assets; no installation steps required.\"\n",
             "container": "ghcr.io/ptero-eggs/installers:debian",
             "entrypoint": "bash"
         }
@@ -104,7 +104,7 @@
             "default_value": "",
             "user_viewable": false,
             "user_editable": false,
-            "rules": "nullable|numeric|between:1024,65535",
+            "rules": "nullable|numeric|between:1024,65535"
         },
         {
             "name": "Direct Connect (No Steam Relay)",

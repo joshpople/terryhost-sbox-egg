@@ -14,7 +14,6 @@ SBOX_APP_ID="${SBOX_APP_ID:-1892930}"
 SBOX_AUTO_UPDATE="${SBOX_AUTO_UPDATE:-1}"
 SBOX_SKIP_UPDATE_AFTER_SEED="${SBOX_SKIP_UPDATE_AFTER_SEED:-1}"
 SBOX_BRANCH="${SBOX_BRANCH:-}"
-STEAM_PLATFORM="${STEAM_PLATFORM:-windows}"
 
 # Optional server configuration variables
 GAME="${GAME:-}"
@@ -217,21 +216,6 @@ ensure_project_libraries_dir() {
 # ============================================================================
 # STEAMCMD HELPERS
 # ============================================================================
-
-steamcmd_installed() {
-    local steamcmd_bin=""
-
-    steamcmd_bin="$(resolve_steamcmd_binary)"
-    if [ -z "${steamcmd_bin}" ]; then
-        return 1
-    fi
-
-    if [ ! -x "${steamcmd_bin}" ]; then
-        chmod 0755 "${steamcmd_bin}" 2>/dev/null || true
-    fi
-
-    [ -x "${steamcmd_bin}" ]
-}
 
 resolve_steamcmd_binary() {
     local candidate=""

@@ -13,7 +13,6 @@
 #     -t hyberhost/gameforge-sbox-egg:latest \
 #     [--build-arg BAKE_WIN_DOTNET_VERSION=10.0.2] \
 #     .
-LABEL org.opencontainers.image.source="https://github.com/joshpople/terryhost-sbox-egg"
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: Builder
 # ─────────────────────────────────────────────────────────────────────────────
@@ -100,12 +99,12 @@ RUN if ! find /work/wineprefix/drive_c -name hostfxr.dll 2>/dev/null | grep -q .
 # ─────────────────────────────────────────────────────────────────────────────
 FROM steamcmd/steamcmd:alpine
 
-LABEL author="Steven A. Smith" maintainer="steven.smith@hyberhost.com"
+LABEL author="Josh Pople for terry.host" maintainer="joshpople20@gmail.com"
 LABEL description="s&box Pterodactyl Egg" version="2.1" license="MIT"
-LABEL org.opencontainers.image.authors="Steven A. Smith" \
+LABEL org.opencontainers.image.authors="Josh Pople" \
       org.opencontainers.image.description="s&box Game Server Egg" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/HyberHost/GameForge-sbox-egg"
+LABEL org.opencontainers.image.source="https://github.com/joshpople/terryhost-sbox-egg"
 
 ARG PUID=999
 ARG PGID=999

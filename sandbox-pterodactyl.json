@@ -51,7 +51,7 @@
             "name": "Server Name",
             "description": "Public server name shown in the s&box server browser.",
             "env_variable": "SERVER_NAME",
-            "default_value": "DXRP Roleplay Server",
+            "default_value": "DXRP | powered by terry.host",
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|string|max:128",

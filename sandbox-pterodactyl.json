@@ -38,6 +38,16 @@
             "field_type": "text"
         },
         {
+            "name": "DXRP Authorization Key",
+            "description": "You need to sign up at https://dxrp.net/portal/.",
+            "env_variable": "SBOX_AUTH_KEY",
+            "default_value": "changeme",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
             "name": "Server Name",
             "description": "Public server name shown in the s&box server browser and listings.",
             "env_variable": "SERVER_NAME",

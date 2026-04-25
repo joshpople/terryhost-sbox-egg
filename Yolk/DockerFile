@@ -13,7 +13,7 @@
 #     -t hyberhost/gameforge-sbox-egg:latest \
 #     [--build-arg BAKE_WIN_DOTNET_VERSION=10.0.2] \
 #     .
-
+LABEL org.opencontainers.image.source="https://github.com/joshpople/terryhost-sbox-egg"
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: Builder
 # ─────────────────────────────────────────────────────────────────────────────

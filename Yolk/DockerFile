@@ -103,9 +103,8 @@ LABEL author="Josh Pople for terry.host" maintainer="joshpople20@gmail.com"
 LABEL description="s&box Pterodactyl Egg" version="2.1" license="MIT"
 LABEL org.opencontainers.image.authors="Josh Pople" \
       org.opencontainers.image.description="s&box Game Server Egg" \
-      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/joshpople/terryhost-sbox-egg"
-
 ARG PUID=999
 ARG PGID=999
 

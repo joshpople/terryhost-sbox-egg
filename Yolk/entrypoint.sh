@@ -27,7 +27,7 @@ TOKEN="${TOKEN:-}"
 SBOX_PROJECT="${SBOX_PROJECT:-}"
 SBOX_PROJECTS_DIR="${SBOX_PROJECTS_DIR:-${CONTAINER_HOME}/projects}"
 SBOX_EXTRA_ARGS="${SBOX_EXTRA_ARGS:-}"
-
+SBOX_AUTH_KEY="${SBOX_AUTH_KEY:-}"
 # Computed variables
 SERVER_PID=""
 
@@ -451,6 +451,10 @@ run_sbox() {
         args+=( +net_query_port "${QUERY_PORT}" )
     fi
 
+    if [ -n "${SBOX_AUTH_KEY}" ]; then
+    args+=( +authorize "${SBOX_AUTH_KEY}" )
+    fi
+
     if [ -n "${SBOX_EXTRA_ARGS}" ]; then
         read -ra extra <<< "${SBOX_EXTRA_ARGS}"
         args+=( "${extra[@]}" )
@@ -476,7 +480,12 @@ run_sbox() {
             # Skip the next iteration to avoid logging the actual token
             continue
         fi
-
+# Add this block for your Auth Key
+        if [[ "${arg}" == "+authorize" ]]; then
+            redacted_args+=( "+authorize" "[REDACTED]" )
+            skip_next=1
+            continue
+        fi
         # Only add to redacted if we didn't just skip a token flag
         if [ -z "${skip_next:-}" ]; then
             redacted_args+=( "${arg}" )

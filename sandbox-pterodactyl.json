@@ -4,12 +4,12 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "name": "s&box Game Server",
-    "author": "team@gameforge.gg",
-    "description": "s&box dedicated server using a custom runtime image with baked Wine + Windows .NET.",
+    "name": "S&box DXRP",
+    "author": "joshpople20@gmail.com",
+    "description": "s&box dedicated server specifically modified for DXRP. Uses a custom runtime image with baked Wine + Windows .NET and +authorize support.",
     "features": [],
     "docker_images": {
-        "ghcr.io\/hyberhost\/gameforge-sbox-egg:latest": "ghcr.io\/hyberhost\/gameforge-sbox-egg:latest"
+        "ghcr.io/joshpople/terryhost-sbox-egg:latest": "ghcr.io/joshpople/terryhost-sbox-egg:latest"
     },
     "file_denylist": [],
     "startup": "start-sbox",
@@ -39,7 +39,7 @@
         },
         {
             "name": "DXRP Authorization Key",
-            "description": "You need to sign up at https://dxrp.net/portal/.",
+            "description": "Your unique authorization key from the DXRP portal.",
             "env_variable": "SBOX_AUTH_KEY",
             "default_value": "changeme",
             "user_viewable": true,
@@ -49,9 +49,9 @@
         },
         {
             "name": "Server Name",
-            "description": "Public server name shown in the s&box server browser and listings.",
+            "description": "Public server name shown in the s&box server browser.",
             "env_variable": "SERVER_NAME",
-            "default_value": "Pterodactyl Sandbox Server",
+            "default_value": "DXRP Roleplay Server",
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|string|max:128",
@@ -59,7 +59,7 @@
         },
         {
             "name": "Map",
-            "description": "Optional map/package identifier loaded after +game. Leave blank to use the game default (for example: facepunch.flatgrass).",
+            "description": "Optional map/package identifier loaded after +game.",
             "env_variable": "MAP",
             "default_value": "",
             "user_viewable": true,
@@ -69,7 +69,7 @@
         },
         {
             "name": "Local Project (.sbproj)",
-            "description": "Optional local .sbproj target for +game. File must exist under /home/container/projects/; enter only relative folder/file (for example: richman/richman.sbproj).",
+            "description": "Optional local .sbproj target for +game.",
             "env_variable": "SBOX_PROJECT",
             "default_value": "",
             "user_viewable": true,
@@ -79,7 +79,7 @@
         },
         {
             "name": "Extra Args",
-            "description": "Optional extra launch arguments appended to sbox-server.exe, some gamemodes may require additional arguments to function properly. Use with caution.",
+            "description": "Optional extra launch arguments.",
             "env_variable": "SBOX_EXTRA_ARGS",
             "default_value": "",
             "user_viewable": true,
@@ -89,9 +89,9 @@
         },
         {
             "name": "Max Players",
-            "description": "Maximum number of players allowed on the server. (This depends on gamemode support, setting this may cause issues)",
+            "description": "Maximum number of players allowed.",
             "env_variable": "MAX_PLAYERS",
-            "default_value": "",
+            "default_value": "32",
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|numeric|between:1,256",
@@ -99,7 +99,7 @@
         },
         {
             "name": "Auto Update",
-                "description": "Run a SteamCMD update check on every container boot to keep the server up to date (1=enabled, 0=disabled).",
+            "description": "Run a SteamCMD update check on every boot.",
             "env_variable": "SBOX_AUTO_UPDATE",
             "default_value": "1",
             "user_viewable": true,
@@ -109,62 +109,12 @@
         },
         {
             "name": "Query Port",
-            "description": "Server query port for Direct Connect. (Experimental)",
+            "description": "Server query port for Direct Connect.",
             "env_variable": "QUERY_PORT",
             "default_value": "",
             "user_viewable": false,
             "user_editable": false,
             "rules": "nullable|numeric|between:1024,65535"
-        },
-        {
-            "name": "Direct Connect (No Steam Relay)",
-            "description": "Allow direct connection via IP+Port without Steam relay (0=Steam relay enabled, 1=Direct IP connection enabled). When enabled, players can connect directly to the server IP and port instead of using Steam relay.",
-            "env_variable": "ENABLE_DIRECT_CONNECT",
-            "default_value": "0",
-            "user_viewable": false,
-            "user_editable": false,
-            "rules": "required|in:0,1",
-            "field_type": "text"
-        },
-        {
-            "name": "Game Server Token",
-            "description": "Optional Steam game server token passed as +net_game_server_token.",
-            "env_variable": "TOKEN",
-            "default_value": "",
-            "user_viewable": false,
-            "user_editable": false,
-            "rules": "nullable|string|max:255",
-            "field_type": "text"
-        },
-        {
-            "name": "Branch",
-            "description": "Optional Steam beta branch name used for updates (for example: staging).",
-            "env_variable": "SBOX_BRANCH",
-            "default_value": "",
-            "user_viewable": false,
-            "user_editable": false,
-            "rules": "nullable|string|max:64",
-            "field_type": "text"
-        },
-        {
-            "name": "SteamCMD Timeout (seconds)",
-            "description": "Maximum time to wait for each SteamCMD probe/update call before continuing startup (0 disables timeout).",
-            "env_variable": "SBOX_STEAMCMD_TIMEOUT",
-            "default_value": "600",
-            "user_viewable": false,
-            "user_editable": false,
-            "rules": "required|numeric|between:0,7200",
-            "field_type": "text"
-        },
-        {
-            "name": "Windows .NET Version",
-            "description": "Informational only: Windows .NET runtime version baked into the container image.",
-            "env_variable": "WIN_DOTNET_VERSION",
-            "default_value": "10.0.0",
-            "user_viewable": false,
-            "user_editable": false,
-            "rules": "required|string|max:32",
-            "field_type": "text"
         }
     ]
 }

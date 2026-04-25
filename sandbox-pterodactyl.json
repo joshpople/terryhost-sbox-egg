@@ -31,7 +31,7 @@
             "name": "Game",
             "description": "Primary game package passed to +game (for example: facepunch.walker).",
             "env_variable": "GAME",
-            "default_value": "facepunch.walker",
+            "default_value": "dxura.rp",
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|string|max:64",

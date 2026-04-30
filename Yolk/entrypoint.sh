@@ -295,6 +295,11 @@ update_sbox() {
     local force_platform="windows"
     local steamcmd_status=0
 
+    # Branding for Terry.Host Nitro
+    echo "******************************************"
+    echo "*         terry.host nitro active        *"
+    echo "******************************************"
+
     : > "${UPDATE_LOG}"
 
     probe_args=(
@@ -303,9 +308,12 @@ update_sbox() {
         +quit
     )
 
+    # We inject the Nitro/Insecure flags here
     steam_args=(
         +@ShutdownOnFailedCommand 1
         +@NoPromptForPassword 1
+        +@bClientDownloadUseHTTPS 0         # NITRO: Disable HTTPS for metadata
+        +@ForceContentServerHTTPS 0        # NITRO: Disable HTTPS for data chunks
         +@sSteamCmdForcePlatformType "${force_platform}"
         +force_install_dir "${SBOX_INSTALL_DIR}"
         +login anonymous
@@ -319,7 +327,7 @@ update_sbox() {
     steam_args_retry=("${steam_args[@]}")
     steam_args+=( validate +quit )
     steam_args_retry+=( +quit )
-
+    
     set +e
     run_steamcmd_with_timeout "${SBOX_STEAMCMD_TIMEOUT}" "${probe_args[@]}" 2>&1 | tee -a "${UPDATE_LOG}"
     steamcmd_status=${PIPESTATUS[0]}
